@@ -1,23 +1,25 @@
-# bitbill-multisig-contracts
-The latest version of Ownbit uses OwnbitMultiSigV4.sol.
+multisig stuff to setup with mew  
+  
+erc20 is off for now
 
-最新版本的 Ownbit 使用 OwnbitMultiSigV4.sol。
+# How to  
+  
+so there're two wallets , transaction goes after you have both signatures.  
+  
+for this you need two wallets in mew , then deploy this contract with remix with constructor args like that `[addr1 , addr2] , 2` . addr's go with quotes.
+then  
+load contract from address (remix will show it) and do `stringtosend` with receiver address and how much money . `addr , 2000000`  
+  
+  you'll see a string. copy that what is after `string :` . better use doubleclick to select because you may select carriage_return symbol otherwise.   
 
-Ownbitの最新バージョンは、OwnbitMultiSigV4.solを使用しています。
+ then  
 
-Последняя версия Ownbit использует OwnbitMultiSigV4.sol.
-
-La última versión de Ownbit utiliza OwnbitMultiSigV4.sol.
-
-# versions
-
-OwnbitMultiSigV4.sol is the latest version (version 4) of ms contract used by Ownbit wallet (Ownbit iOS App version >= 4.24.2, Android App version >= 4.24.3).
-
-Ownbit-MS-Compound.sol is version 3 of ms contract used by Ownbit wallet (Ownbit iOS App version <= 4.24.1, Android App version <= 4.24.2).
-
-BitbillMultiSigEx9.sol is version 2 of ms contract used by Ownbit wallet.
-
-BitbillMultiSig9.sol is version 1 of ms contract used by Ownbit wallet.
-
-### Known issue
-
+ sign this stuff in both mew wallets (sign message in mew)   
+  
+ copy both signatures (`0x` stuff that goes after `sign.:`)  
+then do `spend` in remix  with ` addr , how much , [sign1 , sign2]`. signatures go in quotes  
+  
+  thats all.  
+  
+if second wallet owner wanna check what he's offered to sign he should do 'load contract from address' aka AtAddress in remix and do 'stringtosend' himself  
+![Screen1](/bxx.jpg)
