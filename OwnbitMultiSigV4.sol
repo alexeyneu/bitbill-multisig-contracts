@@ -1,5 +1,5 @@
-pragma solidity ^0.4.26;
-
+pragma solidity ^0.5.3;
+pragma experimental ABIEncoderV2;
 // This is the ETH/ERC20 multisig contract for Ownbit.
 //
 // For 2-of-3 multisig, to authorize a spend, two signtures must be provided by 2 of the 3 owners.
@@ -18,9 +18,9 @@ pragma solidity ^0.4.26;
 // Last update time: 2020-12-12.
 
 interface Erc20 {
-  function approve(address, uint256) public;
+  function approve(address, uint256) external;
 
-  function transfer(address, uint256) public;
+  function transfer(address, uint256) external;
     
   //function balanceOf(address) view public returns (uint256);
 }
@@ -62,7 +62,7 @@ contract OwnbitMultiSig {
   /// @dev Contract constructor sets initial owners and required number of confirmations.
   /// @param _owners List of initial owners.
   /// @param _required Number of required confirmations.
-  constructor(address[] _owners, uint _required) public validRequirement(_owners.length, _required) {
+  constructor(address[] memory _owners, uint _required) public validRequirement(_owners.length, _required) {
     for (uint i = 0; i < _owners.length; i++) {
         //onwer should be distinct, and non-zero
         if (isOwner[_owners[i]] || _owners[i] == address(0x0)) {
@@ -76,7 +76,7 @@ contract OwnbitMultiSig {
 
 
   // The fallback function for this contract.
-  function() public payable {
+  function() external payable {
     if (msg.value > 0) {
         emit Funded(msg.sender, msg.value);
     }
@@ -84,7 +84,7 @@ contract OwnbitMultiSig {
   
   // @dev Returns list of owners.
   // @return List of owner addresses.
-  function getOwners() public view returns (address[]) {
+  function getOwners() public view returns (address[] memory) {
     return owners;
   }
     
@@ -111,16 +111,47 @@ contract OwnbitMultiSig {
     return keccak256(abi.encodePacked(prefix, hashedUnsignedMessage));
   }
   
+
+ function splitSignature(bytes memory sig)
+        internal
+        pure
+        returns (uint8 v, bytes32 r, bytes32 s)
+    {
+        require(sig.length == 65);
+
+        assembly {
+            // first 32 bytes, after the length prefix.
+            r := mload(add(sig, 32))
+            // second 32 bytes.
+            s := mload(add(sig, 64))
+            // final byte (first byte of the next 32 bytes).
+            v := byte(0, mload(add(sig, 96)))
+        }
+
+        return (v, r, s);
+    }
+
+
+
   // @destination: the ether receiver address.
   // @value: the ether value, in wei.
   // @vs, rs, ss: the signatures
-  function spend(address destination, uint256 value, uint8[] vs, bytes32[] rs, bytes32[] ss) external {
+  function spend(address destination, uint256 value, bytes[] memory signs) public {
     require(destination != address(this), "Not allow sending to yourself");
     require(address(this).balance >= value && value > 0, "balance or spend value invalid");
+
+    uint8[] memory vs = new uint8[](signs.length);
+    bytes32[] memory ss = new bytes32[](signs.length);
+    bytes32[] memory rs = new bytes32[](signs.length);
+    for(uint k = 0; k < vs.length; k++) {
+    	(vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
+    }
+
     require(_validSignature(address(0x0), destination, value, vs, rs, ss), "invalid signatures");
     spendNonce = spendNonce + 1;
     //transfer will throw if fails
-    destination.transfer(value);
+    (bool success, ) = destination.call.value(value)("");
+    require(success, "Transfer failed.");
     emit Spent(destination, value);
   }
   
@@ -128,7 +159,7 @@ contract OwnbitMultiSig {
   // @destination: the token receiver address.
   // @value: the token value, in token minimum unit.
   // @vs, rs, ss: the signatures
-  function spendERC20(address destination, address erc20contract, uint256 value, uint8[] vs, bytes32[] rs, bytes32[] ss) external {
+  function spendERC20(address destination, address erc20contract, uint256 value, uint8[] memory vs, bytes32[] memory rs, bytes32[] memory ss) public {
     require(destination != address(this), "Not allow sending to yourself");
     //transfer erc20 token
     //uint256 tokenValue = Erc20(erc20contract).balanceOf(address(this));
@@ -144,19 +175,19 @@ contract OwnbitMultiSig {
   //be careful with any action, data is not included into signature computation. So any data can be included in spendAny.
   //This is usually for some emergent recovery, for example, recovery of NTFs, etc.
   //Owners should not generate 0x9 based signatures in normal cases.
-  function spendAny(address destination, uint256 value, uint8[] vs, bytes32[] rs, bytes32[] ss, bytes data) external {
+  function spendAny(address destination, uint256 value, uint8[] memory vs, bytes32[] memory rs, bytes32[] memory ss, bytes memory data) public {
     require(destination != address(this), "Not allow sending to yourself");
     require(_validSignature(address(0x9), destination, value, vs, rs, ss), "invalid signatures");
     spendNonce = spendNonce + 1;
     //transfer tokens from this contract to the destination address
-    if (destination.call.value(value)(data)) {
-        emit SpentAny(destination, value);
-    }
+    (bool success, ) = destination.call.value(value)(data);
+    require(success, "Transfer failed."); 
+    emit SpentAny(destination, value);
   }
 
   // Confirm that the signature triplets (v1, r1, s1) (v2, r2, s2) ...
   // authorize a spend of this contract's funds to the given destination address.
-  function _validSignature(address erc20Contract, address destination, uint256 value, uint8[] vs, bytes32[] rs, bytes32[] ss) private view returns (bool) {
+  function _validSignature(address erc20Contract, address destination, uint256 value, uint8[] memory vs, bytes32[] memory rs, bytes32[] memory ss) private view returns (bool) {
     require(vs.length == rs.length);
     require(rs.length == ss.length);
     require(vs.length <= owners.length);
@@ -172,7 +203,7 @@ contract OwnbitMultiSig {
   }
   
   // Confirm the addresses as distinct owners of this contract.
-  function _distinctOwners(address[] addrs) private view returns (bool) {
+  function _distinctOwners(address[] memory addrs) private view returns (bool) {
     if (addrs.length > owners.length) {
         return false;
     }
