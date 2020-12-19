@@ -25,10 +25,9 @@ interface Erc20 {
   //function balanceOf(address) view public returns (uint256);
 }
 
-contract OwnbitMultiSig {
+contract MultiSig_with_mew {
     
   uint constant public MAX_OWNER_COUNT = 9;
-
   // The N addresses which control the funds in this contract. The
   // owners of M of these addresses will need to both sign a message
   // allowing the funds in this contract to be spent.
@@ -96,19 +95,38 @@ contract OwnbitMultiSig {
     return required;
   }
 
+
+function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
+    bytes memory HEX = "0123456789abcdef";
+    bytes memory _string = new bytes(64);
+    for(uint k = 0; k < 32; k++) {
+        _string[k*2] = HEX[uint8(_bytes[k] >> 4)];
+        _string[k*2 + 1] = HEX[uint8(_bytes[k] & 0x0f)];
+    }
+    return _string;
+}
+
+
+  function stringtosend(address destination, uint256 value) public view returns (string memory) {
+  	bytes32 hashedUnsignedMessage = generateMessageToSign(address(0x0), destination, value);
+    bytes memory message = bytes32_to_hstring(hashedUnsignedMessage);
+    return string(message);
+  }
   // Generates the message to sign given the output destination address and amount.
   // includes this contract's address and a nonce for replay protection.
   // One option to independently verify: https://leventozturk.com/engineering/sha3/ and select keccak
   function generateMessageToSign(address erc20Contract, address destination, uint256 value) private view returns (bytes32) {
     //the sequence should match generateMultiSigV2 in JS
+    // addr addr addr uint256 uint256
     bytes32 message = keccak256(abi.encodePacked(address(this), erc20Contract, destination, value, spendNonce));
     return message;
   }
   
   function _messageToRecover(address erc20Contract, address destination, uint256 value) private view returns (bytes32) {
     bytes32 hashedUnsignedMessage = generateMessageToSign(erc20Contract, destination, value);
-    bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-    return keccak256(abi.encodePacked(prefix, hashedUnsignedMessage));
+    bytes memory message = bytes32_to_hstring(hashedUnsignedMessage);
+    bytes memory prefix = "\x19Ethereum Signed Message:\n64";
+    return keccak256(abi.encodePacked(prefix, message));
   }
   
 
