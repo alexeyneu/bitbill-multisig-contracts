@@ -12,11 +12,11 @@ load contract from address (remix will show it) and do `stringtosend` with recei
   
   you'll see a string. copy that what is after `string :` . better use doubleclick to select because you may select carriage_return symbol otherwise.   
 
-    then  
+ then  
 
-      sign this stuff in both mew wallets (sign message in mew)   
+ sign this stuff in both mew wallets (sign message in mew)   
   
-      copy both signatures (`0x` stuff that goes after `sign.:`)  
-then do `spend` in remix  with ` addr , how much , [sign1 , sign2]`. signatures go without `0x` and in quotes ,double ones 
+ copy both signatures (`0x` stuff that goes after `sign.:`)  
+then do `spend` in remix  with ` addr , how much , [sign1 , sign2]`. signatures go without `0x` and in quotes  
   
   thats all.
