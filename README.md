@@ -19,4 +19,5 @@ load contract from address (remix will show it) and do `stringtosend` with recei
  copy both signatures (`0x` stuff that goes after `sign.:`)  
 then do `spend` in remix  with ` addr , how much , [sign1 , sign2]`. signatures go without `0x` and in quotes  
   
-  thats all.
+  thats all.  
+![Screen1](/bxx.jpg)
