@@ -17,7 +17,7 @@ load contract from address (remix will show it) and do `stringtosend` with recei
  sign this stuff in both mew wallets (sign message in mew)   
   
  copy both signatures (`0x` stuff that goes after `sign.:`)  
-then do `spend` in remix  with ` addr , how much , [sign1 , sign2]`. signatures go without `0x` and in quotes  
+then do `spend` in remix  with ` addr , how much , [sign1 , sign2]`. signatures go in quotes  
   
   thats all.  
 ![Screen1](/bxx.jpg)

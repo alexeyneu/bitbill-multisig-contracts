@@ -95,48 +95,6 @@ contract MultiSig_with_mew {
     return required;
   }
 
-int8[256] p_util_hexdigit =
-[ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  0,1,2,3,4,5,6,7,8,9,-1,-1,-1,-1,-1,-1,
-  -1,0xa,0xb,0xc,0xd,0xe,0xf,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,0xa,0xb,0xc,0xd,0xe,0xf,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 ];
-
-  function stringh(bytes memory x) private view returns(bytes32 fc) {
-    bytes memory f = new bytes(32);
-    for(uint k = 0; k < 32; k++) {
-        int8 b = p_util_hexdigit[uint8(x[2*k])];
-        f[k] =  byte(b << 4);
-        b = p_util_hexdigit[uint8(x[2*k + 1])];
-        f[k] |= byte(b);
-    }
-
-    assembly {
-          fc := mload(add(f, 32))
-    }
-
-    return fc;
-  }
-
-  function hexbyte(bytes memory x) private view returns(uint8 fb) {
-        int8 b = p_util_hexdigit[uint8(x[0])];
-        fb =  uint8(b << 4);
-        b = p_util_hexdigit[uint8(x[1])];
-        fb = fb | uint8(b);
-        return fb;
-  }
-
 
 function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
     bytes memory HEX = "0123456789abcdef";
@@ -150,7 +108,7 @@ function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
 
 
   function stringtosend(address destination, uint256 value) public view returns (string memory) {
-    bytes32 hashedUnsignedMessage = generateMessageToSign(address(0x0), destination, value);
+  	bytes32 hashedUnsignedMessage = generateMessageToSign(address(0x0), destination, value);
     bytes memory message = bytes32_to_hstring(hashedUnsignedMessage);
     return string(message);
   }
@@ -172,47 +130,39 @@ function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
   }
   
 
- function splitSignaturehex(string memory sig)
+ function splitSignature(bytes memory sig)
         internal
-        view
-        returns (uint8 v, bytes32 r, bytes32 s) {
-        bytes memory k = bytes(sig);
-        require(k.length == 130);
-        delete k;       
-
-        bytes32 rc1;
-        bytes32 rc2;
-        bytes32 sc1;
-        bytes32 sc2;
-        uint8 vc1;
-        uint8 vc2;
+        pure
+        returns (uint8 v, bytes32 r, bytes32 s)
+    {
+        require(sig.length == 65);
 
         assembly {
-            rc1 := mload(add(sig, 32))
-            rc2 := mload(add(sig, 64))
-            sc1 := mload(add(sig, 96))
-            sc2 := mload(add(sig, 128))
-            vc1 := byte(0, mload(add(sig, 160)))
-            vc2 := byte(1, mload(add(sig, 160)))
+            // first 32 bytes, after the length prefix.
+            r := mload(add(sig, 32))
+            // second 32 bytes.
+            s := mload(add(sig, 64))
+            // final byte (first byte of the next 32 bytes).
+            v := byte(0, mload(add(sig, 96)))
         }
-       r = stringh(abi.encodePacked(rc1,rc2));
-       s = stringh(abi.encodePacked(sc1,sc2));
-       v = hexbyte(abi.encodePacked(vc1,vc2));
+
         return (v, r, s);
     }
+
 
 
   // @destination: the ether receiver address.
   // @value: the ether value, in wei.
   // @vs, rs, ss: the signatures
-  function spend(address destination, uint256 value, string[] memory signs) public {
+  function spend(address destination, uint256 value, bytes[] memory signs) public {
     require(destination != address(this), "Not allow sending to yourself");
     require(address(this).balance >= value && value > 0, "balance or spend value invalid");
+
     uint8[] memory vs = new uint8[](signs.length);
     bytes32[] memory ss = new bytes32[](signs.length);
     bytes32[] memory rs = new bytes32[](signs.length);
-    for(uint k = 0; k < vs.length; k++) { 
-      (vs[k], rs[k], ss[k]) = splitSignaturehex(signs[k]);
+    for(uint k = 0; k < vs.length; k++) {
+    	(vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
     }
 
     require(_validSignature(address(0x0), destination, value, vs, rs, ss), "invalid signatures");
