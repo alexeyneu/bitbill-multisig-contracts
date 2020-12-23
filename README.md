@@ -21,5 +21,11 @@ then do `spend` in remix  with ` addr , how much , [sign1 , sign2]`. signatures 
   
   thats all.  
   
-if second wallet owner wanna check what he's offered to sign he should do 'load contract from address' aka AtAddress in remix and do 'stringtosend' himself  
+if second wallet owner wanna check what he's offered to sign he should do 'load contract from address' aka AtAddress in remix and do 'stringtosend' himself 
+  
+# Side notes  
+you can also use `etherscan` for all other than contract deployment.
+sign's go without quotes there  
+`stringtosend` is in 'Read' there , where `spend` is in 'Write'  
+nifty wallet could be used when do "Connect to metamask"  
 ![Screen1](/bxx.jpg)
