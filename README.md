@@ -34,6 +34,6 @@ nifty wallet could be used when do "Connect to metamask"
 tok contract address goes first  
   
 `spendERC20`  
-`addr , tcont_addr ,2000000 ,[sign1 , sign2]`
+`addr , tcont_addr ,2000000 ,[sign1 , sign2]`  
 tok contract address goes second  
 ![Screen1](/bxx.jpg)
