@@ -27,6 +27,7 @@ you can also use `etherscan` for all other than contract deployment. tx has a lo
 sign'es go without quotes there  in `spend`  
 `stringtosend` is in 'Read' there , where `spend` is in 'Write'  
 nifty wallet could be used when do "Connect to metamask"  
+you'll need new `stringtosend` after successful `spendERC20` or `spend`
   
 # ERC20  
 `erc20stringtosend`  
