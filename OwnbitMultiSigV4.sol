@@ -88,23 +88,27 @@ contract MultiSig_with_mew {
   }
 
 
-function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
-    bytes memory HEX = "0123456789abcdef";
-    bytes memory _string = new bytes(64);
-    for(uint k = 0; k < 32; k++) {
-        _string[k*2] = HEX[uint8(_bytes[k] >> 4)];
-        _string[k*2 + 1] = HEX[uint8(_bytes[k] & 0x0f)];
-    }
-    return _string;
-}
-
+  function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
+      bytes memory HEX = "0123456789abcdef";
+      bytes memory _string = new bytes(64);
+      for(uint k = 0; k < 32; k++) {
+          _string[k*2] = HEX[uint8(_bytes[k] >> 4)];
+          _string[k*2 + 1] = HEX[uint8(_bytes[k] & 0x0f)];
+      }
+      return _string;
+  }
 
   function stringtosend(address destination, uint256 value) public view returns (string memory) {
   	bytes32 hashedUnsignedMessage = generateMessageToSign(address(0x0), destination, value);
     bytes memory message = bytes32_to_hstring(hashedUnsignedMessage);
     return string(message);
   }
-  // Generates the message to sign given the output destination address and amount.
+
+  function erc20stringtosend(address erc20Contract, address destination, uint256 value) public view returns (string memory) {
+    bytes32 hashedUnsignedMessage = generateMessageToSign(erc20Contract, destination, value);
+    bytes memory message = bytes32_to_hstring(hashedUnsignedMessage);
+    return string(message);
+  }  // Generates the message to sign given the output destination address and amount.
   // includes this contract's address and a nonce for replay protection.
   // One option to independently verify: https://leventozturk.com/engineering/sha3/ and select keccak
   function generateMessageToSign(address erc20Contract, address destination, uint256 value) private view returns (bytes32) {
@@ -149,14 +153,12 @@ function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
   function spend(address destination, uint256 value, bytes[] memory signs) public {
     require(destination != address(this), "Not allow sending to yourself");
     require(address(this).balance >= value && value > 0, "balance or spend value invalid");
-
     uint8[] memory vs = new uint8[](signs.length);
     bytes32[] memory ss = new bytes32[](signs.length);
     bytes32[] memory rs = new bytes32[](signs.length);
     for(uint k = 0; k < vs.length; k++) {
     	(vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
     }
-
     require(_validSignature(address(0x0), destination, value, vs, rs, ss), "invalid signatures");
     spendNonce = spendNonce + 1;
     //transfer will throw if fails
@@ -168,12 +170,18 @@ function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
   // @erc20contract: the erc20 contract address.
   // @destination: the token receiver address.
   // @value: the token value, in token minimum unit.
-  // @vs, rs, ss: the signatures
-  function spendERC20(address destination, address erc20contract, uint256 value, uint8[] memory vs, bytes32[] memory rs, bytes32[] memory ss) public {
+  // @signs: the signatures
+  function spendERC20(address destination, address erc20contract, uint256 value,bytes[] memory signs ) public {
     require(destination != address(this), "Not allow sending to yourself");
     //transfer erc20 token
     //uint256 tokenValue = Erc20(erc20contract).balanceOf(address(this));
     require(value > 0, "Erc20 spend value invalid");
+    uint8[] memory vs = new uint8[](signs.length);
+    bytes32[] memory ss = new bytes32[](signs.length);
+    bytes32[] memory rs = new bytes32[](signs.length);
+    for(uint k = 0; k < vs.length; k++) {
+      (vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
+    }    
     require(_validSignature(erc20contract, destination, value, vs, rs, ss), "invalid signatures");
     spendNonce = spendNonce + 1;
     // transfer tokens from this contract to the destination address
@@ -185,8 +193,14 @@ function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
   //be careful with any action, data is not included into signature computation. So any data can be included in spendAny.
   //This is usually for some emergent recovery, for example, recovery of NTFs, etc.
   //Owners should not generate 0x9 based signatures in normal cases.
-  function spendAny(address destination, uint256 value, uint8[] memory vs, bytes32[] memory rs, bytes32[] memory ss, bytes memory data) public {
+  function spendAny(address destination, uint256 value, bytes[] memory signs, bytes memory data) public {
     require(destination != address(this), "Not allow sending to yourself");
+    uint8[] memory vs = new uint8[](signs.length);
+    bytes32[] memory ss = new bytes32[](signs.length);
+    bytes32[] memory rs = new bytes32[](signs.length);
+    for(uint k = 0; k < vs.length; k++) {
+      (vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
+    }     
     require(_validSignature(address(0x9), destination, value, vs, rs, ss), "invalid signatures");
     spendNonce = spendNonce + 1;
     //transfer tokens from this contract to the destination address

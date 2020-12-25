@@ -1,6 +1,4 @@
 multisig stuff to setup with mew  
-  
-erc20 is off for now
 
 # How to  
   
@@ -29,4 +27,13 @@ you can also use `etherscan` for all other than contract deployment. tx has a lo
 sign'es go without quotes there  in `spend`  
 `stringtosend` is in 'Read' there , where `spend` is in 'Write'  
 nifty wallet could be used when do "Connect to metamask"  
+  
+# ERC20  
+`erc20stringtosend`  
+`tcont_addr , addr ,2000000`  
+tok contract address goes first  
+  
+`spendERC20`
+`addr , tcont_addr ,2000000 ,[sign1 , sign2]`
+tok contract address goes second  
 ![Screen1](/bxx.jpg)
