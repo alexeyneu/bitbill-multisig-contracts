@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 //
 // For 2-of-3 multisig, to authorize a spend, two signtures must be provided by 2 of the 3 owners.
 // To generate the message to be signed, provide the destination address and
-// spend amount (in wei) to the generateMessageToSign method.
+// spend amount (in wei) to the stringtospend method.
 
 // WARNING: The generated message is only valid until the next spend is executed.
 //          after that, a new message will need to be calculated.
@@ -87,7 +87,6 @@ contract MultiSig_with_mew {
     return required;
   }
 
-
   function bytes32_to_hstring(bytes32 _bytes) private pure returns(bytes memory) {
       bytes memory HEX = "0123456789abcdef";
       bytes memory _string = new bytes(64);
@@ -108,7 +107,9 @@ contract MultiSig_with_mew {
     bytes32 hashedUnsignedMessage = generateMessageToSign(erc20Contract, destination, value);
     bytes memory message = bytes32_to_hstring(hashedUnsignedMessage);
     return string(message);
-  }  // Generates the message to sign given the output destination address and amount.
+  }
+
+  // Generates the message to sign given the output destination address and amount.
   // includes this contract's address and a nonce for replay protection.
   // One option to independently verify: https://leventozturk.com/engineering/sha3/ and select keccak
   function generateMessageToSign(address erc20Contract, address destination, uint256 value) private view returns (bytes32) {
@@ -125,27 +126,19 @@ contract MultiSig_with_mew {
     return keccak256(abi.encodePacked(prefix, message));
   }
   
-
  function splitSignature(bytes memory sig)
-        internal
-        pure
-        returns (uint8 v, bytes32 r, bytes32 s)
-    {
-        require(sig.length == 65);
-
-        assembly {
-            // first 32 bytes, after the length prefix.
-            r := mload(add(sig, 32))
-            // second 32 bytes.
-            s := mload(add(sig, 64))
-            // final byte (first byte of the next 32 bytes).
-            v := byte(0, mload(add(sig, 96)))
-        }
-
-        return (v, r, s);
-    }
-
-
+      internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+      require(sig.length == 65);
+      assembly {
+          // first 32 bytes, after the length prefix.
+          r := mload(add(sig, 32))
+          // second 32 bytes.
+          s := mload(add(sig, 64))
+          // final byte (first byte of the next 32 bytes).
+          v := byte(0, mload(add(sig, 96)))
+      }
+      return (v, r, s);
+  }
 
   // @destination: the ether receiver address.
   // @value: the ether value, in wei.
@@ -157,7 +150,7 @@ contract MultiSig_with_mew {
     bytes32[] memory ss = new bytes32[](signs.length);
     bytes32[] memory rs = new bytes32[](signs.length);
     for(uint k = 0; k < vs.length; k++) {
-    	(vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
+        (vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
     }
     require(_validSignature(address(0x0), destination, value, vs, rs, ss), "invalid signatures");
     spendNonce = spendNonce + 1;
@@ -180,7 +173,7 @@ contract MultiSig_with_mew {
     bytes32[] memory ss = new bytes32[](signs.length);
     bytes32[] memory rs = new bytes32[](signs.length);
     for(uint k = 0; k < vs.length; k++) {
-      (vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
+        (vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
     }    
     require(_validSignature(erc20contract, destination, value, vs, rs, ss), "invalid signatures");
     spendNonce = spendNonce + 1;
@@ -199,7 +192,7 @@ contract MultiSig_with_mew {
     bytes32[] memory ss = new bytes32[](signs.length);
     bytes32[] memory rs = new bytes32[](signs.length);
     for(uint k = 0; k < vs.length; k++) {
-      (vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
+        (vs[k], rs[k], ss[k]) = splitSignature(signs[k]);
     }     
     require(_validSignature(address(0x9), destination, value, vs, rs, ss), "invalid signatures");
     spendNonce = spendNonce + 1;
@@ -212,8 +205,6 @@ contract MultiSig_with_mew {
   // Confirm that the signature triplets (v1, r1, s1) (v2, r2, s2) ...
   // authorize a spend of this contract's funds to the given destination address.
   function _validSignature(address erc20Contract, address destination, uint256 value, uint8[] memory vs, bytes32[] memory rs, bytes32[] memory ss) private view returns (bool) {
-    require(vs.length == rs.length);
-    require(rs.length == ss.length);
     require(vs.length <= owners.length);
     require(vs.length >= required);
     bytes32 message = _messageToRecover(erc20Contract, destination, value);
